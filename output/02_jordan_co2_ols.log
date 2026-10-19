@@ -1,0 +1,423 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  output/02_jordan_co2_ols.log
+  log type:  text
+ opened on:  19 Oct 2026, 18:31:56
+
+. 
+. import delimited using "data/jordan_co2.csv", clear
+(encoding automatically selected: ISO-8859-1)
+(6 vars, 34 obs)
+
+. tsset year
+
+Time variable: year, 1990 to 2023
+        Delta: 1 unit
+
+. 
+. 
+. *----------------------------------------------------------------------------
+> --
+. * 1. Variables
+. *----------------------------------------------------------------------------
+> --
+. * Growth rates as 100 x log differences; budget balance as change in pp (it i
+> s negative every year)
+. 
+. foreach v in co2_mt exports_usd imports_usd energy_twh {
+  2.     generate ln_`v' = ln(`v')
+  3.     generate g_`v'  = 100 * D.ln_`v'
+  4. }
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+(1 missing value generated)
+
+. generate d_budget = D.budget_bal_gdp
+(1 missing value generated)
+
+. 
+. label variable g_co2_mt      "CO2 emissions growth (%)"
+
+. label variable g_exports_usd "Exports growth (%)"
+
+. label variable g_imports_usd "Imports growth (%)"
+
+. label variable g_energy_twh  "Energy consumption growth (%)"
+
+. label variable d_budget      "Change in budget balance (pp of GDP)"
+
+. 
+. summarize g_co2_mt g_exports_usd g_imports_usd g_energy_twh d_budget
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    g_co2_mt |         33    2.365893    6.464766  -17.51678   19.88492
+g_exports_~d |         33    7.478315    11.28819  -21.92783   32.68185
+g_imports_~d |         33    6.949072    12.88391   -17.7145   35.35881
+g_energy_twh |         33    2.918173    5.847084  -11.38787   16.40534
+    d_budget |         33    -.039242    2.532554  -5.876378   6.751884
+
+. correlate g_co2_mt g_exports_usd g_imports_usd g_energy_twh d_budget
+(obs=33)
+
+             | g_co2_mt g_expo~d g_impo~d g_ener~h d_budget
+-------------+---------------------------------------------
+    g_co2_mt |   1.0000
+g_exports_~d |   0.1706   1.0000
+g_imports_~d |   0.5013   0.6759   1.0000
+g_energy_twh |   0.7516   0.1234   0.3572   1.0000
+    d_budget |   0.1999   0.3650   0.2877   0.1936   1.0000
+
+
+. 
+. * Both series indexed to 1990 = 100 so they share one axis
+. generate co2_index    = 100 * co2_mt / co2_mt[1]
+
+. generate energy_index = 100 * energy_twh / energy_twh[1]
+
+. twoway (line co2_index year, lwidth(medthick)) (line energy_index year, lwidt
+> h(medthick) lpattern(dash)), ///
+>     title("Jordan: CO2 emissions and primary energy use (1990 = 100)", size(m
+> edium)) ///
+>     ytitle("Index, 1990 = 100") xtitle("") xlabel(1990(5)2020) ///
+>     legend(order(1 "CO2 emissions" 2 "Primary energy consumption") rows(1))
+
+. graph export "output/figures/jordan_co2_energy.png", replace width(1600)
+file output/figures/jordan_co2_energy.png written in PNG format
+
+. 
+. 
+. *----------------------------------------------------------------------------
+> --
+. * 2. Unit roots
+. *----------------------------------------------------------------------------
+> --
+. * All stationary (ADF p < 0.001)
+. foreach v in g_co2_mt g_exports_usd g_imports_usd g_energy_twh d_budget {
+  2.     dfuller `v', lags(0)
+  3. }
+
+Dickey–Fuller test for unit root           Number of obs  = 32
+Variable: g_co2_mt                         Number of lags =  0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -6.427       -3.702       -2.980       -2.622
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+Dickey–Fuller test for unit root           Number of obs  = 32
+Variable: g_exports_usd                    Number of lags =  0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -5.546       -3.702       -2.980       -2.622
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+Dickey–Fuller test for unit root           Number of obs  = 32
+Variable: g_imports_usd                    Number of lags =  0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -4.733       -3.702       -2.980       -2.622
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0001.
+
+Dickey–Fuller test for unit root           Number of obs  = 32
+Variable: g_energy_twh                     Number of lags =  0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -6.006       -3.702       -2.980       -2.622
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+Dickey–Fuller test for unit root           Number of obs  = 32
+Variable: d_budget                         Number of lags =  0
+
+H0: Random walk without drift, d = 0
+
+                                       Dickey–Fuller
+                   Test      -------- critical value ---------
+              statistic           1%           5%          10%
+--------------------------------------------------------------
+ Z(t)            -7.558       -3.702       -2.980       -2.622
+--------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000.
+
+. 
+. 
+. *----------------------------------------------------------------------------
+> --
+. * 3. Baseline model
+. *----------------------------------------------------------------------------
+> --
+. regress g_co2_mt g_exports_usd g_imports_usd d_budget g_energy_twh
+
+      Source |       SS           df       MS      Number of obs   =        33
+-------------+----------------------------------   F(4, 28)        =     12.63
+       Model |  860.588278         4   215.14707   Prob > F        =    0.0000
+    Residual |  476.794038        28  17.0283585   R-squared       =    0.6435
+-------------+----------------------------------   Adj R-squared   =    0.5926
+       Total |  1337.38232        32  41.7931974   Root MSE        =    4.1265
+
+------------------------------------------------------------------------------
+    g_co2_mt | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+g_exports_~d |  -.1050478    .092281    -1.14   0.265    -.2940768    .0839813
+g_imports_~d |   .1964536   .0828482     2.37   0.025     .0267468    .3661603
+    d_budget |   .0832997   .3134651     0.27   0.792    -.5588045    .7254038
+g_energy_twh |   .6943578   .1371231     5.06   0.000     .4134739    .9752418
+       _cons |  -.2366848   .9534154    -0.25   0.806    -2.189668    1.716298
+------------------------------------------------------------------------------
+
+. estimates store baseline
+
+. 
+. estat bgodfrey, lags(1 2)
+
+Breusch–Godfrey LM test for autocorrelation
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |          1.022               1                   0.3120
+       2     |          2.317               2                   0.3140
+---------------------------------------------------------------------------
+                        H0: no serial correlation
+
+. estat hettest
+
+Breusch–Pagan/Cook–Weisberg test for heteroskedasticity 
+Assumption: Normal error terms
+Variable: Fitted values of g_co2_mt
+
+H0: Constant variance
+
+    chi2(1) =   1.32
+Prob > chi2 = 0.2499
+
+. estat archlm
+LM test for autoregressive conditional heteroskedasticity (ARCH)
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |          2.379               1                   0.1230
+---------------------------------------------------------------------------
+         H0: no ARCH effects      vs.  H1: ARCH(p) disturbance
+
+. estat ovtest
+
+Ramsey RESET test for omitted variables
+Omitted: Powers of fitted values of g_co2_mt
+
+H0: Model has no omitted variables
+
+F(3, 25) =   3.97
+Prob > F = 0.0193
+
+. estat vif
+
+    Variable |       VIF       1/VIF  
+-------------+----------------------
+g_imports_~d |      2.14    0.467048
+g_exports_~d |      2.04    0.490399
+g_energy_twh |      1.21    0.827795
+    d_budget |      1.18    0.844359
+-------------+----------------------
+    Mean VIF |      1.64
+
+. predict resid_base, residuals
+(1 missing value generated)
+
+. sktest resid_base
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+  resid_base |        33         0.8879         0.3680          0.87     0.6460
+
+. 
+. * RESET fails here (p = 0.019); the biggest residual is 2020
+. 
+. 
+. *----------------------------------------------------------------------------
+> --
+. * 4. Preferred model: 2020 dummy
+. *----------------------------------------------------------------------------
+> --
+. generate covid2020 = year == 2020
+
+. label variable covid2020 "2020 dummy"
+
+. 
+. regress g_co2_mt g_exports_usd g_imports_usd d_budget g_energy_twh covid2020
+
+      Source |       SS           df       MS      Number of obs   =        33
+-------------+----------------------------------   F(5, 27)        =     12.55
+       Model |  935.081123         5  187.016225   Prob > F        =    0.0000
+    Residual |  402.301193        27  14.9000442   R-squared       =    0.6992
+-------------+----------------------------------   Adj R-squared   =    0.6435
+       Total |  1337.38232        32  41.7931974   Root MSE        =    3.8601
+
+------------------------------------------------------------------------------
+    g_co2_mt | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+g_exports_~d |  -.1201545   .0865856    -1.39   0.177    -.2978135    .0575045
+g_imports_~d |   .1964815    .077498     2.54   0.017     .0374689    .3554942
+    d_budget |   .0008683   .2955305     0.00   0.998    -.6055102    .6072468
+g_energy_twh |   .5747004   .1389839     4.14   0.000      .289529    .8598718
+   covid2020 |  -9.952788   4.451243    -2.24   0.034    -19.08598   -.8195929
+       _cons |   .5236397   .9544727     0.55   0.588    -1.434777    2.482056
+------------------------------------------------------------------------------
+
+. estimates store preferred
+
+. 
+. estat bgodfrey, lags(1 2)
+
+Breusch–Godfrey LM test for autocorrelation
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |          2.509               1                   0.1132
+       2     |          3.459               2                   0.1774
+---------------------------------------------------------------------------
+                        H0: no serial correlation
+
+. estat hettest
+
+Breusch–Pagan/Cook–Weisberg test for heteroskedasticity 
+Assumption: Normal error terms
+Variable: Fitted values of g_co2_mt
+
+H0: Constant variance
+
+    chi2(1) =   0.77
+Prob > chi2 = 0.3812
+
+. estat archlm
+LM test for autoregressive conditional heteroskedasticity (ARCH)
+---------------------------------------------------------------------------
+    lags(p)  |          chi2               df                 Prob > chi2
+-------------+-------------------------------------------------------------
+       1     |          0.217               1                   0.6411
+---------------------------------------------------------------------------
+         H0: no ARCH effects      vs.  H1: ARCH(p) disturbance
+
+. estat ovtest
+
+Ramsey RESET test for omitted variables
+Omitted: Powers of fitted values of g_co2_mt
+
+H0: Model has no omitted variables
+
+F(3, 24) =   1.85
+Prob > F = 0.1655
+
+. predict resid_pref, residuals
+(1 missing value generated)
+
+. sktest resid_pref
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+  resid_pref |        33         0.4922         0.3946          1.27     0.5289
+
+. estat sbcusum
+
+Cumulative sum test for parameter stability
+
+Sample: 2 thru 34                           Number of obs = 33
+H0: No structural break
+
+                   Test      -------- Critical value ---------
+      Type    statistic           1%           5%          10%
+--------------------------------------------------------------
+ Recursive       0.0655       1.1430       0.9479       0.8499
+--------------------------------------------------------------
+
+. graph export "output/figures/jordan_cusum.png", replace width(1400)
+file output/figures/jordan_cusum.png written in PNG format
+
+. 
+. * Robustness: heteroskedasticity-robust standard errors
+. regress g_co2_mt g_exports_usd g_imports_usd d_budget g_energy_twh covid2020,
+>  vce(robust)
+
+Linear regression                               Number of obs     =         33
+                                                F(4, 27)          =          .
+                                                Prob > F          =          .
+                                                R-squared         =     0.6992
+                                                Root MSE          =     3.8601
+
+------------------------------------------------------------------------------
+             |               Robust
+    g_co2_mt | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+g_exports_~d |  -.1201545   .0928969    -1.29   0.207    -.3107632    .0704542
+g_imports_~d |   .1964815   .0842403     2.33   0.027     .0236347    .3693283
+    d_budget |   .0008683   .3246298     0.00   0.998    -.6652171    .6669537
+g_energy_twh |   .5747004   .1676771     3.43   0.002     .2306555    .9187453
+   covid2020 |  -9.952788   2.454593    -4.05   0.000     -14.9892    -4.91638
+       _cons |   .5236397   .8770075     0.60   0.555    -1.275831     2.32311
+------------------------------------------------------------------------------
+
+. estimates store robust
+
+. 
+. estimates table baseline preferred robust, b(%9.3f) se(%9.3f) stats(N r2 r2_a
+> ) ///
+>     varlabel title("CO2 emissions growth, Jordan 1991-2023")
+
+CO2 emissions growth, Jordan 1991-2023
+
+--------------------------------------------------------------
+                Variable | baseline    preferred    robust    
+-------------------------+------------------------------------
+      Exports growth (%) |    -0.105      -0.120      -0.120  
+                         |     0.092       0.087       0.093  
+      Imports growth (%) |     0.196       0.196       0.196  
+                         |     0.083       0.077       0.084  
+Change in budget balan~  |     0.083       0.001       0.001  
+                         |     0.313       0.296       0.325  
+Energy consumption gro~) |     0.694       0.575       0.575  
+                         |     0.137       0.139       0.168  
+              2020 dummy |                -9.953      -9.953  
+                         |                 4.451       2.455  
+                Constant |    -0.237       0.524       0.524  
+                         |     0.953       0.954       0.877  
+-------------------------+------------------------------------
+                       N |        33          33          33  
+                      r2 |     0.643       0.699       0.699  
+                    r2_a |     0.593       0.643       0.643  
+--------------------------------------------------------------
+                                                  Legend: b/se
+
+. 
+. log close
+      name:  <unnamed>
+       log:  output/02_jordan_co2_ols.log
+  log type:  text
+ closed on:  19 Oct 2026, 18:31:57
+-------------------------------------------------------------------------------

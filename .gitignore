@@ -1,0 +1,3 @@
+data/raw/
+output/*.irf
+.DS_Store
